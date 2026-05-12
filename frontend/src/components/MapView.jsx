@@ -25,11 +25,11 @@ const BoundsUpdater = ({ optimalRoute }) => {
 const getStartIcon = () => {
   return L.divIcon({
     className: 'custom-div-icon',
-    html: `<div class="px-2.5 py-1 bg-blue-600 border-2 border-white rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/40">
-             <span class="text-[10px] font-extrabold text-white whitespace-nowrap">Start: Nagar Nigam</span>
+    html: `<div style="padding:4px 10px;background:linear-gradient(135deg,#10b981,#14b8a6);border:2px solid white;border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(16,185,129,0.4);">
+             <span style="font-size:10px;font-weight:800;color:#022c22;white-space:nowrap;font-family:Inter,sans-serif;">Start: Nagar Nigam</span>
            </div>`,
-    iconSize: [110, 26],
-    iconAnchor: [55, 13],
+    iconSize: [120, 28],
+    iconAnchor: [60, 14],
   });
 };
 
@@ -37,34 +37,37 @@ const getStartIcon = () => {
 const getEndIcon = () => {
   return L.divIcon({
     className: 'custom-div-icon',
-    html: `<div class="px-2.5 py-1 bg-slate-950 border-2 border-white rounded-lg flex items-center justify-center shadow-lg shadow-slate-950/50">
-             <span class="text-[10px] font-extrabold text-white whitespace-nowrap">End: Waste Facility</span>
+    html: `<div style="padding:4px 10px;background:linear-gradient(135deg,#0a1f1a,#0d3b2e);border:2px solid white;border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(0,0,0,0.5);">
+             <span style="font-size:10px;font-weight:800;color:#a7f3d0;white-space:nowrap;font-family:Inter,sans-serif;">End: Waste Facility</span>
            </div>`,
-    iconSize: [110, 26],
-    iconAnchor: [55, 13],
+    iconSize: [120, 28],
+    iconAnchor: [60, 14],
   });
 };
 
 // Generate dynamic custom colored HTML markers matching fill status thresholds
 const getCustomIcon = (fillPercentage) => {
-  let colorClass = 'bg-emerald-500 shadow-emerald-500/40';
-  let pulseClass = 'bg-emerald-400';
+  let bgColor = '#10b981';
+  let pulseColor = '#34d399';
+  let shadow = 'rgba(16,185,129,0.4)';
+  let pulse = '';
   
   if (fillPercentage > 80) {
-    colorClass = 'bg-rose-500 shadow-rose-500/50 animate-pulse';
-    pulseClass = 'bg-rose-400';
+    bgColor = '#ef4444';
+    pulseColor = '#f87171';
+    shadow = 'rgba(239,68,68,0.5)';
+    pulse = 'animation:pulse 1.5s infinite;';
   } else if (fillPercentage >= 50) {
-    colorClass = 'bg-amber-500 shadow-amber-500/40';
-    pulseClass = 'bg-amber-400';
+    bgColor = '#f59e0b';
+    pulseColor = '#fbbf24';
+    shadow = 'rgba(245,158,11,0.4)';
   }
 
   return L.divIcon({
     className: 'custom-div-icon',
-    html: `<div class="relative flex items-center justify-center">
-             <span class="absolute inline-flex h-5 w-5 rounded-full ${pulseClass} opacity-50 animate-ping"></span>
-             <div class="w-4 h-4 ${colorClass} border-[1.5px] border-white rounded-full shadow-md flex items-center justify-center">
-               <span class="sr-only">${fillPercentage}%</span>
-             </div>
+    html: `<div style="position:relative;display:flex;align-items:center;justify-content:center;">
+             <span style="position:absolute;display:inline-flex;height:20px;width:20px;border-radius:50%;background:${pulseColor};opacity:0.5;animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite;"></span>
+             <div style="width:14px;height:14px;background:${bgColor};border:1.5px solid white;border-radius:50%;box-shadow:0 2px 8px ${shadow};${pulse}"></div>
            </div>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8],
@@ -86,12 +89,12 @@ const MapView = ({ bins, optimalRoute, setSelectedBin }) => {
   }).filter(Boolean);
 
   return (
-    <div className="w-full h-[520px] rounded-2xl overflow-hidden glass-panel border border-slate-800 relative z-10 shadow-2xl">
+    <div className="w-full h-[520px] rounded-2xl overflow-hidden glass-panel border border-emerald-500/10 relative z-10 shadow-2xl">
       <MapContainer 
         center={centerPosition} 
         zoom={13} 
         scrollWheelZoom={true} 
-        style={{ width: '100%', height: '100%', background: '#0b0f19' }}
+        style={{ width: '100%', height: '100%', background: '#0a1f1a' }}
       >
         <BoundsUpdater optimalRoute={optimalRoute} />
 
@@ -177,9 +180,9 @@ const MapView = ({ bins, optimalRoute, setSelectedBin }) => {
           <Polyline 
             positions={optimalRoute.roadGeometry} 
             pathOptions={{ 
-              color: '#2563eb', 
-              weight: 6, 
-              opacity: 0.75, 
+              color: '#10b981', 
+              weight: 5, 
+              opacity: 0.8, 
               lineCap: 'round',
               lineJoin: 'round'
             }} 
@@ -188,9 +191,9 @@ const MapView = ({ bins, optimalRoute, setSelectedBin }) => {
           <Polyline 
             positions={polylinePositions} 
             pathOptions={{ 
-              color: '#0284c7', 
-              weight: 4.5, 
-              opacity: 0.9, 
+              color: '#14b8a6', 
+              weight: 4, 
+              opacity: 0.85, 
               dashArray: '8, 8',
               lineCap: 'round',
               lineJoin: 'round'
@@ -200,10 +203,10 @@ const MapView = ({ bins, optimalRoute, setSelectedBin }) => {
       </MapContainer>
       
       {/* Aesthetic integrated Status Legend container */}
-      <div className="absolute bottom-3 left-3 z-[400] glass-card p-2 rounded-xl border border-slate-700/60 text-[10px] flex items-center gap-2.5 bg-slate-900/90 text-slate-300">
-        <span className="font-semibold text-slate-400">Map Fill Levels:</span>
+      <div className="absolute bottom-3 left-3 z-[400] glass-card p-2 rounded-xl border border-emerald-500/15 text-[10px] flex items-center gap-2.5 bg-eco-deep/90 text-emerald-200/70">
+        <span className="font-semibold text-emerald-400/50">Fill Levels:</span>
         <div className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+          <span className="w-2 h-2 rounded-full bg-eco-emerald inline-block"></span>
           <span>&lt;50%</span>
         </div>
         <div className="flex items-center gap-1">
@@ -212,7 +215,7 @@ const MapView = ({ bins, optimalRoute, setSelectedBin }) => {
         </div>
         <div className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-rose-500 inline-block animate-pulse"></span>
-          <span>&gt;80% Critical</span>
+          <span>&gt;80%</span>
         </div>
       </div>
     </div>
