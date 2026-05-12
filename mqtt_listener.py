@@ -1,6 +1,7 @@
 import json
 import logging
 import time
+# pyrefly: ignore [missing-import]
 import paho.mqtt.client as mqtt
 from app.config import settings
 from app.services import bin_service

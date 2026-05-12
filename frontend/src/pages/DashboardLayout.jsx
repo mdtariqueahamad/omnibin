@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
+import DashboardHeader from '../components/DashboardHeader';
 import AnalyticsCards from '../components/AnalyticsCards';
+import ReportsPanel from '../components/ReportsPanel';
+import BinZoneCards from '../components/BinZoneCards';
+import MapBlock from '../components/MapBlock';
 import MapView from '../components/MapView';
 import RoutePanel from '../components/RoutePanel';
+import AIChatbot from '../components/AIChatbot';
 import { fetchBins, fetchBinHistory, seedBins } from '../services/api';
 import { Sparkles, X, Activity, Server } from 'lucide-react';
 
@@ -32,10 +37,7 @@ function DashboardLayout() {
       }
     };
 
-    // Execute first instant call
     loadBinsData();
-
-    // Trigger interval loop
     const interval = setInterval(loadBinsData, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -62,7 +64,7 @@ function DashboardLayout() {
     loadHistory();
   }, [selectedBin]);
 
-  // Seed sample database nodes utility hook
+  // Seed sample database nodes utility hook — Admin only
   const handleSeedDatabase = async () => {
     setSeeding(true);
     try {
@@ -77,7 +79,7 @@ function DashboardLayout() {
 
   return (
     <div className="flex min-h-screen bg-eco-deep text-green-50 selection:bg-eco-emerald selection:text-eco-deep">
-      {/* Decoupled Side Navigation Layout */}
+      {/* Side Navigation */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -86,23 +88,26 @@ function DashboardLayout() {
         onLogout={logout}
       />
 
-      {/* Main Orchestrator Canvas Workspace */}
+      {/* Main Content Area */}
       <main className="flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-y-auto relative">
-        {/* Subtle ambient glow in background */}
+        {/* Ambient background glows */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-eco-emerald/5 rounded-full blur-[120px] pointer-events-none" aria-hidden="true" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-eco-teal/5 rounded-full blur-[100px] pointer-events-none" aria-hidden="true" />
 
         <div className="relative z-10">
-          {/* Guest mode indicator banner */}
+          {/* ═══════════════ GLASS HEADER BAR ═══════════════ */}
+          <DashboardHeader bins={bins} isAdmin={isAdmin} activeTab={activeTab} />
+
+          {/* Guest mode indicator — shown for read-only users */}
           {!isAdmin && (
             <div className="mb-4 p-3 rounded-xl bg-amber-500/8 border border-amber-500/15 flex items-center gap-3 animate-fade-in">
               <span className="guest-badge">Read-Only</span>
-              <span className="text-xs text-amber-300/70">You are viewing in guest mode. Admin controls are hidden.</span>
+              <span className="text-xs text-amber-300/70">You are viewing in guest mode. Admin controls are completely hidden.</span>
             </div>
           )}
 
-          {/* Helper Banner for clean out-of-the-box demonstration deployment */}
-          {bins.length === 0 && isConnected && isAdmin && (
+          {/* Admin-only: Seed banner when zero bins */}
+          {isAdmin && bins.length === 0 && isConnected && (
             <div className="mb-6 p-4 rounded-2xl glass-card flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3.5 text-left">
                 <div className="p-2.5 bg-eco-emerald/10 rounded-xl text-eco-emerald shrink-0">
@@ -110,7 +115,7 @@ function DashboardLayout() {
                 </div>
                 <div>
                   <h3 className="font-bold text-sm text-white">Zero Active Nodes Monitored</h3>
-                  <p className="text-xs text-emerald-300/50 mt-0.5">Click below to automatically populate simulated smart container mock parameters.</p>
+                  <p className="text-xs text-emerald-300/50 mt-0.5">Click below to populate simulated smart container parameters.</p>
                 </div>
               </div>
               <button
@@ -124,57 +129,56 @@ function DashboardLayout() {
             </div>
           )}
 
-          {/* Live Active Overview Matrix Dashboard */}
+          {/* ═══════════════ DASHBOARD TAB ═══════════════ */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6 animate-fade-in">
-              {/* Header branding block */}
-              <div className="text-left mb-2">
-                <h1 className="text-2xl font-black text-white tracking-tight">Fleet Real-Time Core</h1>
-                <p className="text-xs text-emerald-400/50 mt-0.5">Automated telemetry streams mapping continuous live ESP32 status updates</p>
-              </div>
-
-              {/* Status Analytics summary layers */}
+              {/* 1. Analytics Cards */}
               <AnalyticsCards bins={bins} />
 
-              {/* Split workspace view layout: Left canvas for Maps, Right panel for route management */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                  <MapView bins={bins} optimalRoute={optimalRoute} setSelectedBin={setSelectedBin} />
-                </div>
-                <div className="lg:col-span-1 flex flex-col gap-6">
-                  <RoutePanel optimalRoute={optimalRoute} setOptimalRoute={setOptimalRoute} bins={bins} isReadOnly={!isAdmin} />
-                  
-                  {/* Instant focus alert block mapping critical state hubs */}
-                  <div className="glass-panel rounded-2xl p-4 border border-emerald-500/10 text-left flex-1 flex flex-col">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400/50 mb-3 flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-rose-500 animate-pulse" /> Urgent Outage Hubs
-                    </h3>
-                    {bins.filter(b => b.status === 'Critical').length === 0 ? (
-                      <div className="text-xs text-emerald-500/30 italic p-4 bg-eco-deep/40 rounded-xl border border-emerald-500/8 text-center flex-1 flex items-center justify-center">
-                        Zero hardware capacity overflows logged.
-                      </div>
-                    ) : (
-                      <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1.5">
-                        {bins.filter(b => b.status === 'Critical').map(b => (
-                          <div key={b.bin_id} onClick={() => setSelectedBin(b)} className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-between cursor-pointer hover:bg-rose-500/15 transition-all">
-                            <div className="truncate pr-2">
-                              <p className="text-xs font-bold text-white truncate">{b.location}</p>
-                              <p className="text-[9px] text-rose-400 font-mono">{b.bin_id}</p>
-                            </div>
-                            <span className="text-xs font-black text-rose-400 bg-rose-500/20 px-1.5 py-0.5 rounded shrink-0">
-                              {b.fill_percentage}%
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+              {/* 2. Reports Panel */}
+              <ReportsPanel isAdmin={isAdmin} />
+
+              {/* 3. Interactive Bin Zone Cards */}
+              <BinZoneCards bins={bins} onSelectBin={setSelectedBin} />
+
+              {/* 4. Collapsible Map Block */}
+              <MapBlock
+                bins={bins}
+                optimalRoute={optimalRoute}
+                setOptimalRoute={setOptimalRoute}
+                setSelectedBin={setSelectedBin}
+                isAdmin={isAdmin}
+              />
+
+              {/* 5. Urgent Outage Hubs */}
+              <div className="glass-panel rounded-2xl p-4 border border-emerald-500/10 text-left">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400/50 mb-3 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-rose-500 animate-pulse" /> Urgent Outage Hubs
+                </h3>
+                {bins.filter(b => b.status === 'Critical').length === 0 ? (
+                  <div className="text-xs text-emerald-500/30 italic p-4 bg-eco-deep/40 rounded-xl border border-emerald-500/8 text-center">
+                    Zero hardware capacity overflows logged.
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1.5">
+                    {bins.filter(b => b.status === 'Critical').map(b => (
+                      <div key={b.bin_id} onClick={() => setSelectedBin(b)} className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-between cursor-pointer hover:bg-rose-500/15 transition-all">
+                        <div className="truncate pr-2">
+                          <p className="text-xs font-bold text-white truncate">{b.location}</p>
+                          <p className="text-[9px] text-rose-400 font-mono">{b.bin_id}</p>
+                        </div>
+                        <span className="text-xs font-black text-rose-400 bg-rose-500/20 px-1.5 py-0.5 rounded shrink-0">
+                          {b.fill_percentage}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Fullscreen interactive Map interface */}
+          {/* ═══════════════ MAP TAB ═══════════════ */}
           {activeTab === 'map' && (
             <div className="space-y-4 animate-fade-in text-left">
               <div>
@@ -182,21 +186,30 @@ function DashboardLayout() {
                 <p className="text-xs text-emerald-400/50">Click container markers to analyze volume properties and active priority rules</p>
               </div>
               <MapView bins={bins} optimalRoute={optimalRoute} setSelectedBin={setSelectedBin} />
+              {isAdmin && (
+                <RoutePanel optimalRoute={optimalRoute} setOptimalRoute={setOptimalRoute} bins={bins} isReadOnly={false} />
+              )}
             </div>
           )}
 
-          {/* Dedicated Combinatorial Routing view */}
+          {/* ═══════════════ ROUTES TAB ═══════════════ */}
           {activeTab === 'routes' && (
             <div className="space-y-6 animate-fade-in text-left max-w-2xl mx-auto">
               <div>
                 <h2 className="text-xl font-bold text-white">NetworkX Optimizer Sandbox</h2>
                 <p className="text-xs text-emerald-400/50">Evaluate dynamic edge limits and shortest metrics calculated from the depot</p>
               </div>
-              <RoutePanel optimalRoute={optimalRoute} setOptimalRoute={setOptimalRoute} bins={bins} isReadOnly={!isAdmin} />
+              {isAdmin ? (
+                <RoutePanel optimalRoute={optimalRoute} setOptimalRoute={setOptimalRoute} bins={bins} isReadOnly={false} />
+              ) : (
+                <div className="glass-panel rounded-2xl p-8 text-center border border-emerald-500/10">
+                  <p className="text-sm text-emerald-400/40">Route optimization is available for admin users only.</p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Central Analytics time-series list preview */}
+          {/* ═══════════════ HISTORY TAB ═══════════════ */}
           {activeTab === 'history' && (
             <div className="space-y-4 animate-fade-in text-left">
               <div>
@@ -219,11 +232,11 @@ function DashboardLayout() {
         </div>
       </main>
 
-      {/* Analytics Drilldown Interactive Overlays Modal */}
+      {/* ═══════════════ BIN DETAIL MODAL ═══════════════ */}
       {selectedBin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-eco-deep/80 backdrop-blur-sm animate-fade-in">
-          <div className="glass-login w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl text-left flex flex-col max-h-[85vh]">
-            {/* Modal header banner */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-eco-deep/80 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedBin(null)}>
+          <div className="glass-login w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl text-left flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+            {/* Modal header */}
             <div className="p-4 bg-eco-forest/60 border-b border-emerald-500/10 flex items-center justify-between">
               <div>
                 <span className="text-[9px] font-bold text-eco-emerald uppercase tracking-wider block">IoT Sensor Logbook</span>
@@ -234,53 +247,47 @@ function DashboardLayout() {
               </button>
             </div>
 
-            {/* Modal internal metrics */}
+            {/* Modal metrics */}
             <div className="p-4 overflow-y-auto flex-1 space-y-4">
               <div className="grid grid-cols-3 gap-2 bg-eco-deep/40 p-2.5 rounded-xl border border-emerald-500/10 text-center text-xs">
                 <div>
-                  <span className="text-[9px] text-emerald-500/40 block">Current Saturation</span>
+                  <span className="text-[9px] text-emerald-500/40 block">Saturation</span>
                   <span className="font-extrabold text-white">{selectedBin.fill_percentage}%</span>
                 </div>
                 <div>
-                  <span className="text-[9px] text-emerald-500/40 block">Dispatch Level</span>
+                  <span className="text-[9px] text-emerald-500/40 block">Dispatch</span>
                   <span className="font-extrabold text-white">Tier {selectedBin.priority}</span>
                 </div>
                 <div>
-                  <span className="text-[9px] text-emerald-500/40 block">Status State</span>
+                  <span className="text-[9px] text-emerald-500/40 block">Status</span>
                   <span className={`font-bold text-[11px] ${selectedBin.status === 'Critical' ? 'text-rose-400 animate-pulse' : 'text-eco-emerald'}`}>
                     {selectedBin.status}
                   </span>
                 </div>
               </div>
 
-              {/* Log Timeline block */}
+              {/* History Timeline */}
               <div>
                 <h4 className="text-xs font-semibold text-emerald-400/50 mb-2.5 flex items-center gap-1.5">
                   <Activity className="w-3.5 h-3.5 text-eco-teal" /> Historic Storage Logs
                 </h4>
-                
                 {historyLoading ? (
-                  <div className="p-8 text-center text-xs text-emerald-500/30 italic">
-                    Retrieving time-series bounds from database...
-                  </div>
+                  <div className="p-8 text-center text-xs text-emerald-500/30 italic">Retrieving time-series data...</div>
                 ) : binHistory && binHistory.length > 0 ? (
                   <div className="space-y-2 max-h-[240px] overflow-y-auto pr-1.5">
                     {binHistory.map((item, index) => {
                       const d = new Date(item.timestamp);
-                      const timeFormatted = isNaN(d.getTime()) ? item.timestamp : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                      const dateFormatted = isNaN(d.getTime()) ? '' : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-
+                      const time = isNaN(d.getTime()) ? item.timestamp : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                      const date = isNaN(d.getTime()) ? '' : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
                       return (
                         <div key={index} className="p-2.5 rounded-xl bg-eco-deep/40 border border-emerald-500/8 flex items-center justify-between text-xs">
                           <div className="text-left pr-2">
-                            <span className="font-mono text-[10px] text-emerald-200/70 block">{timeFormatted}</span>
-                            <span className="text-[9px] text-emerald-500/30 block">{dateFormatted}</span>
+                            <span className="font-mono text-[10px] text-emerald-200/70 block">{time}</span>
+                            <span className="text-[9px] text-emerald-500/30 block">{date}</span>
                           </div>
-                          
-                          {/* Progress volume indicator */}
                           <div className="flex items-center gap-2.5 w-32 justify-end shrink-0">
                             <div className="w-16 bg-eco-deep/60 rounded-full h-1 overflow-hidden">
-                              <div className={`h-full rounded-full ${item.fill_percentage > 80 ? 'bg-rose-500' : 'bg-eco-emerald'}`} style={{ width: `${Math.min(item.fill_percentage, 100)}%` }}></div>
+                              <div className={`h-full rounded-full ${item.fill_percentage > 80 ? 'bg-rose-500' : 'bg-eco-emerald'}`} style={{ width: `${Math.min(item.fill_percentage, 100)}%` }} />
                             </div>
                             <span className="font-bold text-emerald-100 text-right w-8">{item.fill_percentage}%</span>
                           </div>
@@ -290,7 +297,7 @@ function DashboardLayout() {
                   </div>
                 ) : (
                   <p className="text-xs text-emerald-500/25 italic p-4 text-center bg-eco-deep/30 rounded-xl">
-                    Zero timeline archives saved for this hardware token.
+                    Zero timeline archives saved for this token.
                   </p>
                 )}
               </div>
@@ -298,6 +305,9 @@ function DashboardLayout() {
           </div>
         </div>
       )}
+
+      {/* ═══════════════ FLOATING AI CHATBOT ═══════════════ */}
+      <AIChatbot />
     </div>
   );
 }

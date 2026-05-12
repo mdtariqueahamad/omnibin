@@ -1,4 +1,5 @@
 from typing import List
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter, HTTPException, status
 from app.models import BinCreate, BinResponse, BinHistoryResponse, RouteResponse
 from app.services import bin_service, routing
